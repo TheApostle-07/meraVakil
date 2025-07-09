@@ -1,0 +1,11 @@
+/** @layer base { html { @apply bg-gray-50 } } */
+/** @layer base { html { @apply bg-gray-50 } } */
+/** @layer base { html { @apply bg-gray-50 } } */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/** Optional custom tweak (keep this below the directives) */
+@layer base {
+  html { @apply bg-gray-50; }
+}
