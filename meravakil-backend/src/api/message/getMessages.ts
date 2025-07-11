@@ -9,7 +9,7 @@ const getChatMessagesSchema = z.object({
 const getChatMessages = async (req: Request, res: Response) => {
   // @ts-ignore
   const userId = req.userId;
-  const validationResult = getChatMessagesSchema.safeParse(req.body);
+  const validationResult = getChatMessagesSchema.safeParse(req.query);
 
   if (!validationResult.success) {
     res.status(400).json({
@@ -41,6 +41,10 @@ const getChatMessages = async (req: Request, res: Response) => {
       select: {
         from: true,
         content: true,
+        grounded: true,
+      },
+      orderBy: {
+        createdAt: "asc",
       },
     });
 

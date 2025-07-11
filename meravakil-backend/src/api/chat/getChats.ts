@@ -13,6 +13,9 @@ const getUserChats = async (req: Request, res: Response) => {
         title: true,
         isStarred: true,
       },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
     res.status(200).json(chats);
   } catch (err) {
