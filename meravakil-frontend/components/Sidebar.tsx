@@ -244,10 +244,10 @@ export default function Sidebar({
             onSelect(t.id);
             close?.();
           }}
-          className={`block w-full truncate text-left px-3 py-2 my-0.5 rounded-lg transition relative
-        ${isActive ? "bg-blue-50 text-blue-800" : "hover:bg-gray-100"}`}
+          className={`block w-full text-left px-3 py-2 my-0.5 rounded-lg transition relative
+    ${isActive ? "bg-blue-50 text-blue-800" : "hover:bg-gray-100"}`}
         >
-          {/* Add gradient fade effect overlay */}
+          {/* Gradient overlay */}
           <div
             className={`absolute right-0 top-0 bottom-0 w-20 pointer-events-none transition-opacity duration-200 ${
               isHovered || isActive || openMenuId === t.id
@@ -259,11 +259,15 @@ export default function Sidebar({
                 : "bg-gradient-to-l from-gray-100 from-40% via-gray-100/60 via-gray-100/20 to-transparent"
             }`}
           />
-          <div className="flex items-center gap-2 pr-8">
+
+          <div className="flex items-center gap-2 w-full">
             {t.isStarred && (
-              <Star size={14} className="text-blue-600 fill-blue-600" />
+              <Star
+                size={14}
+                className="text-blue-600 fill-blue-600 flex-none"
+              />
             )}
-            <span className="flex-1 truncate">{t.firstLine}</span>
+            <span className="truncate w-full">{t.firstLine}</span>
           </div>
         </button>
 
