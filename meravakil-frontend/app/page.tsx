@@ -187,6 +187,7 @@ export default function Home() {
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
+          onNewChat={() => {}}
           activeId={activeId}
           onSelect={(id) => setActiveId(id)}
           mobile={sidebarOpen}
