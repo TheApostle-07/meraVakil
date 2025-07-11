@@ -5,7 +5,7 @@ import { answerQuery } from "../lib/ai";
 
 const schema = z.object({
   chatId: z.string().uuid("chatId must be a valid UUID"),
-  query: z.string().min(4),
+  query: z.string().min(1),
 });
 
 const chatHandler = async (
@@ -21,7 +21,7 @@ const chatHandler = async (
   const { chatId, query } = parsed.data;
 
   try {
-    const { answer, grounded } = await answerQuery(query);
+    const { answer, grounded } = await answerQuery(query, res);
 
     await prisma.message.create({
       data: {
@@ -31,8 +31,6 @@ const chatHandler = async (
         grounded,
       },
     });
-
-    res.json({ answer, grounded });
   } catch (err) {
     console.error("LLM or DB error:", err);
     res.status(500).json({ error: "Internal server error" });

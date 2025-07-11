@@ -1,12 +1,14 @@
 import { openai } from "./openai";
 import { getRelevantDocs } from "./retrival";
+import { Response } from "express";
 
 /**
  * Returns the assistant's answer.
  * Logs whether the answer is grounded on Pinecone context or falls back to a pure‑GPT response.
  */
 export async function answerQuery(
-  query: string
+  query: string,
+  res: Response
 ): Promise<{ answer: string; grounded: boolean }> {
   // 1️⃣ fetch context from Pinecone
   const docs = await getRelevantDocs(query);
@@ -57,16 +59,34 @@ Please provide a comprehensive answer based on this context.`
     : `Please provide general legal guidance for this question:
       **Question:** ${query}`;
 
+  res.writeHead(200, {
+    "Content-Type": "text/plain; charset=utf-8",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    // expose grounded info via a header if you like:
+    "X-Grounded": String(grounded),
+  });
+
   // 2️⃣ chat completion
-  const chat = await openai.chat.completions.create({
+  const chatStream = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     temperature: 0.0,
+    stream: true,
     messages: [
       { role: "system", content: sys },
       { role: "user", content: user },
     ],
   });
 
-  const answer = chat.choices[0].message.content ?? "";
+  let answer = "";
+  for await (const part of chatStream) {
+    const chunk = part.choices[0].delta.content;
+    if (chunk) {
+      answer += chunk;
+      res.write(chunk);
+    }
+  }
+  res.write("\n\n");
+  res.end();
   return { answer, grounded };
 }
