@@ -6,6 +6,9 @@ import cors from "./middleware/cors";
 import rateLimiter from "./middleware/rateLimit";
 import chatRoute from "./api/chat";
 import storeUser from "./api/webhook";
+import { verifyUser } from "./middleware/verifyUser";
+import chatRouter from "./api/chat/chatRouter";
+import messageRouter from "./api/message/messageRouter";
 
 const app = express();
 
@@ -16,6 +19,8 @@ app.use(rateLimiter);
 app.use(express.json());
 app.use(clerkMiddleware());
 
+app.use("/api/chat", verifyUser, chatRouter);
+app.use("/api/message", verifyUser, messageRouter);
 app.post("/api/chat", chatRoute);
 
 const PORT = process.env.PORT || 4000;
