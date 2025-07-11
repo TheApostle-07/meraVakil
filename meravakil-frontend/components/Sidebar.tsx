@@ -104,31 +104,62 @@ export default function Sidebar({
     };
   }, [openMenuId]);
 
-  const handleRename = () => {
-    if (selectedThread && renameValue.trim()) {
-      const updatedThreads = threads.map((thread) =>
-        thread.id === selectedThread.id
-          ? { ...thread, firstLine: renameValue.trim() }
-          : thread
+  const handleRename = async () => {
+    if (!selectedThread || !renameValue.trim()) return;
+    const newTitle = renameValue.trim();
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/chat/rename`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            chatId: selectedThread.id,
+            title: newTitle,
+          }),
+        }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const updated = (await res.json()) as { id: string; title: string };
+      const updatedThreads = threads.map((t) =>
+        t.id === updated.id ? { ...t, firstLine: updated.title } : t
       );
       setThreads(updatedThreads);
       localStorage.setItem("mv_threads", JSON.stringify(updatedThreads));
+      setShowRenameModal(false);
+      setSelectedThread(null);
+      setRenameValue("");
+    } catch (err) {
+      console.error("Failed to rename chat:", err);
     }
-    setShowRenameModal(false);
-    setSelectedThread(null);
-    setRenameValue("");
   };
 
-  const handleDelete = () => {
-    if (selectedThread) {
-      const updatedThreads = threads.filter(
-        (thread) => thread.id !== selectedThread.id
+  const handleDelete = async () => {
+    if (!selectedThread) return;
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/chat/delete`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ chatId: selectedThread.id }),
+        }
       );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const updatedThreads = threads.filter((t) => t.id !== selectedThread.id);
       setThreads(updatedThreads);
       localStorage.setItem("mv_threads", JSON.stringify(updatedThreads));
+      setShowDeleteModal(false);
+      setSelectedThread(null);
+    } catch (err) {
+      console.error("Failed to delete chat:", err);
     }
-    setShowDeleteModal(false);
-    setSelectedThread(null);
   };
 
   const handleToggleStar = async (threadId: string) => {
@@ -255,10 +286,7 @@ export default function Sidebar({
               }}
               className="w-full text-left rounded-sm px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
             >
-              <Star
-                size={14}
-                className={t.isStarred ? "text-yellow-500 fill-yellow-500" : ""}
-              />
+              <Star size={14} />
               {t.isStarred ? "Unstar" : "Star"}
             </button>
             <button
