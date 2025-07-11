@@ -28,6 +28,7 @@ model Chat {
   isStarred Boolean   @default(false)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages  Message[]
+  createdAt DateTime  @default(now())
 }
 
 model Message {
@@ -35,6 +36,7 @@ model Message {
   from      String
   content   String
   chatId    String
+  grounded  Boolean  @default(false)
   chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }
