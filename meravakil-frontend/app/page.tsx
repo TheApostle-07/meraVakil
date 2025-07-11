@@ -168,20 +168,58 @@ export default function Home() {
         }),
       });
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok || !res.body) {
+        console.error("Network error or no stream");
+        setLoading(false);
+        return;
+      }
 
-      const responseData = await res.json();
+      // Grab grounded info from header (optional)
+      const groundedHeader = res.headers.get("X-Grounded");
+      const grounded = groundedHeader === "true";
+      console.log("Grounded:", groundedHeader, grounded);
 
-      const botMsg: Msg = {
-        role: "ai",
-        txt: responseData.answer,
-        grounded: !!responseData.grounded,
-      };
+      // Stream and append chunks
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let answer = "";
 
-      setCurrentThread((curr) => ({
-        id: curr!.id,
-        msgs: [...curr!.msgs, botMsg],
+      // Add a placeholder AI message once, then stream into it
+      setCurrentThread((prev) => ({
+        ...prev,
+        msgs: [...prev.msgs, { role: "ai", txt: "", grounded }],
       }));
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true });
+          console.log("Received chunk:", chunk);
+          answer += chunk;
+
+          setCurrentThread((prev) => {
+            const updatedMsgs = [...prev.msgs];
+            const lastMsgIndex = updatedMsgs.length - 1;
+
+            // Update only the last ai message
+            if (updatedMsgs[lastMsgIndex].role === "ai") {
+              updatedMsgs[lastMsgIndex] = {
+                ...updatedMsgs[lastMsgIndex],
+                txt: answer,
+              };
+            }
+
+            return {
+              ...prev,
+              msgs: updatedMsgs,
+            };
+          });
+        }
+      }
+
+      reader.releaseLock();
     } catch (error) {
       console.error("Error sending message:", error);
     } finally {
