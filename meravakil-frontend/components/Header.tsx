@@ -72,9 +72,17 @@ export default function Header() {
                 onClick={() => setOpen((o) => !o)}
                 aria-expanded={open}
                 aria-label="User menu"
-                className="h-8 w-8 rounded-full bg-white/25 flex items-center justify-center text-sm font-semibold select-none focus:outline-none"
+                className="h-8 w-8 rounded-full bg-white/25 flex items-center justify-center text-sm font-semibold select-none focus:outline-none overflow-hidden"
               >
-                {initials || "MK"}
+                {user?.imageUrl ? (
+                  <img
+                    src={user.imageUrl}
+                    alt={`${user.firstName || user.username || "User"} avatar`}
+                    className="h-full w-full object-cover rounded-full"
+                  />
+                ) : (
+                  <span className="text-white">{initials || "MK"}</span>
+                )}
               </button>
 
               {open && (
