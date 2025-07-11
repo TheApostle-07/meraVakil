@@ -26,7 +26,7 @@ model Chat {
   title     String
   userId    String
   isStarred Boolean   @default(false)
-  user      User      @relation(fields: [userId], references: [id])
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages  Message[]
 }
 
@@ -35,6 +35,6 @@ model Message {
   from      String
   content   String
   chatId    String
-  chat      Chat     @relation(fields: [chatId], references: [id])
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }
