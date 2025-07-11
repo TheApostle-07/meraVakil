@@ -13,7 +13,7 @@ import {
 import RenameChat from "./Popup/Rename";
 import DeleteChat from "./Popup/Delete";
 
-type ChatThread = {
+export type ChatThread = {
   id: string;
   firstLine: string;
   isStarred?: boolean;
@@ -23,12 +23,14 @@ export default function Sidebar({
   activeId,
   onSelect,
   onNewChat,
+  newThread,
   mobile,
   close,
 }: {
   activeId: string | null;
   onSelect: (id: string) => void;
   onNewChat: () => void;
+  newThread?: ChatThread | null;
   /** when true renders as mobile drawer */
   mobile?: boolean;
   /** close callback for mobile drawer */
@@ -56,7 +58,6 @@ export default function Sidebar({
 
         const chats: { id: string; title: string; isStarred?: boolean }[] =
           await res.json();
-        console.log("Fetched chats:", chats);
 
         const mapped = chats.map((c) => ({
           id: c.id,
@@ -83,6 +84,11 @@ export default function Sidebar({
 
     loadThreads();
   }, []);
+
+  useEffect(() => {
+    if (!newThread) return;
+    setThreads((prev) => [newThread, ...prev]);
+  }, [newThread]);
 
   /** Close menu when clicking outside */
   useEffect(() => {

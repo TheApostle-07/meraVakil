@@ -9,8 +9,9 @@ import { Menu } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { ChatThread } from "../components/Sidebar";
 
-type Msg = { role: "u" | "b"; txt: string; grounded?: boolean };
+type Msg = { role: "user" | "ai"; txt: string; grounded?: boolean };
 type Thread = { id: string; msgs: Msg[] };
 
 function ChatArea({
@@ -26,32 +27,30 @@ function ChatArea({
     <div
       className={`flex flex-col w-full max-w-5xl mx-auto px-6 md:px-10 lg:px-12 pt-8 gap-6
             max-h-[calc(100vh-200px)] overflow-y-auto overflow-x-hidden
-            overscroll-contain pb-28 ${
-        messages.length === 0 ? "mt-6" : ""
-      }`}
+            overscroll-contain pb-28 ${messages?.length === 0 ? "mt-6" : ""}`}
     >
       <AnimatePresence initial={false}>
-        {messages.map((m, i) => (
+        {messages?.map((m, i) => (
           <motion.div
             key={i}
-            className={m.role === "u" ? "text-right" : ""}
+            className={m.role === "user" ? "text-right" : ""}
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.25 }}
           >
-            {m.role === "u" ? (
-              <span
-                className="inline-block px-4 py-2 rounded-xl bg-blue-600 text-white max-w-full sm:max-w-sm md:max-w-md lg:max-w-lg break-words"
-              >
+            {m.role === "user" ? (
+              <span className="inline-block px-4 py-2 rounded-xl bg-blue-600 text-white max-w-full sm:max-w-sm md:max-w-md lg:max-w-lg break-words">
                 {m.txt}
               </span>
             ) : (
               <div className="prose prose-slate dark:prose-invert bg-gray-100 text-gray-900 px-5 py-3 rounded-xl max-w-full sm:max-w-sm md:max-w-md lg:max-w-xl">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.txt}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {m.txt}
+                </ReactMarkdown>
               </div>
             )}
-            {m.role === "b" && m.grounded && (
+            {m.role === "ai" && m.grounded && (
               <span className="ml-2 inline-block text-[10px] px-2 py-[2px] rounded bg-green-100 text-green-700 align-middle animate-pulse">
                 sourced
               </span>
@@ -60,7 +59,7 @@ function ChatArea({
         ))}
       </AnimatePresence>
 
-      {loading && messages.length > 0 && (
+      {loading && messages?.length > 0 && (
         <motion.div
           key="typing"
           className="text-left"
@@ -85,26 +84,14 @@ function ChatArea({
 }
 
 export default function Home() {
-  const [threads, setThreads] = useState<Record<string, Thread>>({});
-  const [activeId, setActiveId] = useState<string>(() =>
-    crypto.randomUUID()
-  );
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<File[]>([]);
-  const [loading, setLoading] = useState(false);   // no initial splash
-  const [splash, setSplash] = useState(true);    // show once at app start
+  const [loading, setLoading] = useState(false); // no initial splash
+  const [splash, setSplash] = useState(true); // show once at app start
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
-
-  const active = threads[activeId]?.msgs || [];
-
-  // restore threads from localStorage on first load
-  useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("mv_threads") || "[]");
-    const obj: Record<string, Thread> = {};
-    saved.forEach((t: any) => (obj[t.id] = { id: t.id, msgs: t.msgs }));
-    setThreads(obj);
-  }, []);
+  const [currentThread, setCurrentThread] = useState<Thread | null>(null);
+  const [newThread, setNewThread] = useState<ChatThread | null>();
 
   // initial splash loader (2 s)
   useEffect(() => {
@@ -112,57 +99,129 @@ export default function Home() {
     return () => clearTimeout(t);
   }, []);
 
-
-  // persist whenever threads change
-  useEffect(() => {
-    localStorage.setItem(
-      "mv_threads",
-      JSON.stringify(Object.values(threads))
-    );
-  }, [threads]);
-
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [active]);
+  }, [currentThread]);
 
   async function send() {
     if (!input.trim()) return;
-    setLoading(true);
-    const userMsg: Msg = { role: "u", txt: input };
 
-    // optimistic UI
-    setThreads(prev => ({
-      ...prev,
-      [activeId]: {
-        id: activeId,
-        msgs: [...(prev[activeId]?.msgs || []), userMsg]
+    try {
+      setLoading(true);
+      const userMsg: Msg = { role: "user", txt: input };
+      let chatId = currentThread?.id;
+
+      if (!currentThread) {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/chat/new`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              content: input,
+            }),
+          }
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const chat = (await res.json()) as {
+          id: string;
+          title: string;
+        };
+        chatId = chat.id;
+        setNewThread({
+          id: chat.id,
+          firstLine: chat.title,
+        });
+        setCurrentThread({ id: chat.id, msgs: [userMsg] });
+      } else {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/message/new`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              chatId: currentThread.id,
+              content: input,
+            }),
+          }
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        setCurrentThread((curr) => ({
+          id: curr!.id,
+          msgs: [...curr!.msgs, userMsg],
+        }));
       }
-    }));
-    setInput("");
 
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/chat`,
-      {
+      setInput("");
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
-          query:
-            userMsg.txt +
-            "\n\nPlease answer in clear Markdown with descriptive headings, bullet points and short paragraphs.",
+          chatId,
+          query: userMsg.txt,
         }),
-      }
-    ).then(r => r.json());
+      });
 
-    const botMsg: Msg = { role: "b", txt: res.answer, grounded: !!res.grounded };
-    setThreads(prev => ({
-      ...prev,
-      [activeId]: {
-        ...prev[activeId],
-        msgs: [...prev[activeId].msgs, botMsg]
-      }
-    }));
-    setLoading(false);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const responseData = await res.json();
+
+      const botMsg: Msg = {
+        role: "ai",
+        txt: responseData.answer,
+        grounded: !!responseData.grounded,
+      };
+
+      setCurrentThread((curr) => ({
+        id: curr!.id,
+        msgs: [...curr!.msgs, botMsg],
+      }));
+    } catch (error) {
+      console.error("Error sending message:", error);
+    } finally {
+      setLoading(false);
+    }
   }
+
+  const fetchThreadMessages = async (threadId: string) => {
+    if (!threadId) {
+      setCurrentThread(null);
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/message/all?chatId=${threadId}`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const messages: {
+        from: "user" | "ai";
+        content: string;
+        grounded?: boolean;
+      }[] = await res.json();
+      const msgs: Msg[] = messages.map((m) => ({
+        role: m.from,
+        txt: m.content,
+        grounded: m.grounded,
+      }));
+
+      setCurrentThread({ id: threadId, msgs });
+    } catch (err) {
+      console.error("Failed to fetch messages!", err);
+    }
+  };
 
   return (
     <>
@@ -187,21 +246,25 @@ export default function Home() {
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
-          onNewChat={() => {}}
-          activeId={activeId}
-          onSelect={(id) => setActiveId(id)}
+          onNewChat={() => {
+            setCurrentThread(null);
+            setNewThread(null);
+          }}
+          newThread={newThread}
+          activeId={currentThread?.id}
+          onSelect={(id) => fetchThreadMessages(id)}
           mobile={sidebarOpen}
           close={() => setSidebarOpen(false)}
         />
 
         <main className="flex-1 flex flex-col items-center min-h-0 overflow-hidden pt-20">
           {/* Centered banner when no messages */}
-          {active.length === 0 && (
+          {!currentThread && (
             <motion.div
               className="flex-1 flex flex-col items-center justify-center text-center space-y-4"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
             >
               <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-700 tracking-wide">
                 Your Personal Lawyer is Here
@@ -210,18 +273,23 @@ export default function Home() {
                 How can I assist you today?
               </h2>
               <p className="text-gray-500 max-w-md">
-                Describe your issue or attach any legal document—I'll review it and guide you.
+                Describe your issue or attach any legal document—I'll review it
+                and guide you.
               </p>
             </motion.div>
           )}
 
-          <ChatArea messages={active} loading={loading} bottomRef={bottomRef} />
+          <ChatArea
+            messages={currentThread?.msgs}
+            loading={loading}
+            bottomRef={bottomRef}
+          />
 
           {/* Input panel */}
           <motion.form
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.4, ease: 'easeOut' }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
             onSubmit={(e) => {
               e.preventDefault();
               send();
@@ -282,8 +350,9 @@ export default function Home() {
           )}
         </main>
       </div>
-    {/* Splash loader (one-time) */}
-    { splash && <Loader visible /> }
+
+      {/* Splash loader (one-time) */}
+      {splash && <Loader visible />}
     </>
   );
 }
