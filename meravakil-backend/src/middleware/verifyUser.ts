@@ -5,7 +5,8 @@ export function verifyUser(req: Request, res: Response, next: NextFunction) {
   const { userId } = getAuth(req);
 
   if (!userId) {
-    return res.status(401).json({ error: "Unauthorized!" });
+    res.status(401).json({ error: "Unauthorized!" });
+    return;
   }
 
   // @ts-ignore

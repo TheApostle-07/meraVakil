@@ -12,13 +12,14 @@ const getChatMessages = async (req: Request, res: Response) => {
   const validationResult = getChatMessagesSchema.safeParse(req.body);
 
   if (!validationResult.success) {
-    return res.status(400).json({
+    res.status(400).json({
       error: "Validation failed",
       details: validationResult.error.issues.map((issue) => ({
         field: issue.path.join("."),
         message: issue.message,
       })),
     });
+    return;
   }
 
   const { chatId } = validationResult.data;
@@ -30,7 +31,8 @@ const getChatMessages = async (req: Request, res: Response) => {
       select: { userId: true },
     });
     if (!chat || chat.userId !== userId) {
-      return res.status(404).json({ error: "Chat not found" });
+      res.status(404).json({ error: "Chat not found" });
+      return;
     }
 
     // Fetch messages
@@ -42,10 +44,10 @@ const getChatMessages = async (req: Request, res: Response) => {
       },
     });
 
-    return res.status(200).json(messages);
+    res.status(200).json(messages);
   } catch (err) {
     console.error("Error fetching messages:", err);
-    return res.status(500).json({ error: "Could not fetch messages" });
+    res.status(500).json({ error: "Could not fetch messages" });
   }
 };
 

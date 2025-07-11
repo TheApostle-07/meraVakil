@@ -17,13 +17,14 @@ const addChatMessage = async (req: Request, res: Response) => {
   const validationResult = addMessageSchema.safeParse(req.body);
 
   if (!validationResult.success) {
-    return res.status(400).json({
+    res.status(400).json({
       error: "Validation failed",
       details: validationResult.error.issues.map((issue) => ({
         field: issue.path.join("."),
         message: issue.message,
       })),
     });
+    return;
   }
 
   const { chatId, content } = validationResult.data;
@@ -35,7 +36,8 @@ const addChatMessage = async (req: Request, res: Response) => {
       select: { userId: true },
     });
     if (!chat || chat.userId !== userId) {
-      return res.status(404).json({ error: "Chat not found" });
+      res.status(404).json({ error: "Chat not found" });
+      return;
     }
 
     // Create the new message
@@ -50,10 +52,10 @@ const addChatMessage = async (req: Request, res: Response) => {
       },
     });
 
-    return res.status(201).json(message);
+    res.status(201).json(message);
   } catch (err) {
     console.error("Error creating message:", err);
-    return res.status(500).json({ error: "Could not add message" });
+    res.status(500).json({ error: "Could not add message" });
   }
 };
 

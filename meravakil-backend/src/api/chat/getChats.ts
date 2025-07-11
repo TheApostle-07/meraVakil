@@ -14,10 +14,10 @@ const getUserChats = async (req: Request, res: Response) => {
         isStarred: true,
       },
     });
-    return res.status(200).json(chats);
+    res.status(200).json(chats);
   } catch (err) {
     console.error("DB error fetching chats:", err);
-    return res.status(500).json({ error: "Could not fetch chats" });
+    res.status(500).json({ error: "Could not fetch chats" });
   }
 };
 

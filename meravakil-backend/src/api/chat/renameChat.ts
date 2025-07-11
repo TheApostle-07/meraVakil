@@ -11,9 +11,8 @@ const renameChat = async (req: Request, res: Response) => {
   const parseResult = renameChatSchema.safeParse(req.body);
   if (!parseResult.success) {
     const { path, message } = parseResult.error.errors[0];
-    return res
-      .status(400)
-      .json({ error: `Invalid ${path.join(".")}: ${message}` });
+    res.status(400).json({ error: `Invalid ${path.join(".")}: ${message}` });
+    return;
   }
 
   // @ts-ignore
@@ -27,7 +26,8 @@ const renameChat = async (req: Request, res: Response) => {
       select: { userId: true },
     });
     if (!existing || existing.userId !== userId) {
-      return res.status(404).json({ error: "Chat not found" });
+      res.status(404).json({ error: "Chat not found" });
+      return;
     }
 
     // Perform update
@@ -37,10 +37,10 @@ const renameChat = async (req: Request, res: Response) => {
       select: { id: true, title: true },
     });
 
-    return res.status(200).json(updated);
+    res.status(200).json(updated);
   } catch (err) {
     console.error("Error renaming chat:", err);
-    return res.status(500).json({ error: "Could not rename chat" });
+    res.status(500).json({ error: "Could not rename chat" });
   }
 };
 

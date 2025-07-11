@@ -17,13 +17,14 @@ const createChatWithMessage = async (req: Request, res: Response) => {
   const validationResult = newChatSchema.safeParse(req.body);
 
   if (!validationResult.success) {
-    return res.status(400).json({
+    res.status(400).json({
       error: "Validation failed",
       details: validationResult.error.issues.map((issue) => ({
         field: issue.path.join("."),
         message: issue.message,
       })),
     });
+    return;
   }
 
   const { content } = validationResult.data;
@@ -48,10 +49,10 @@ const createChatWithMessage = async (req: Request, res: Response) => {
       },
     });
 
-    return res.status(201).json(chat);
+    res.status(201).json(chat);
   } catch (err) {
     console.error("Error creating chat with first message:", err);
-    return res.status(500).json({ error: "Could not create chat and message" });
+    res.status(500).json({ error: "Could not create chat and message" });
   }
 };
 
