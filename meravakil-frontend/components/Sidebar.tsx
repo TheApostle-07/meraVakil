@@ -112,7 +112,7 @@ export default function Sidebar({
     setSelectedThread(null);
   };
 
-  /** reusable list item */
+  //** reusable list item */
   function Item({ t }: { t: ChatThread }) {
     const isActive = t.id === activeId;
     const [isHovered, setIsHovered] = useState(false);
@@ -149,25 +149,39 @@ export default function Sidebar({
             close?.();
           }}
           className={`block w-full truncate text-left px-3 py-2 my-0.5 rounded-lg transition relative
-          ${
-            isActive
-              ? "bg-blue-50 text-blue-800 font-medium"
-              : "hover:bg-gray-100"
-          }`}
+        ${
+          isActive
+            ? "bg-blue-50 text-blue-800 font-medium"
+            : "hover:bg-gray-100"
+        }`}
         >
+          {/* Add gradient fade effect overlay */}
+          <div
+            className={`absolute right-0 top-0 bottom-0 w-20 pointer-events-none transition-opacity duration-200 ${
+              isHovered || isActive || openMenuId === t.id
+                ? "opacity-100"
+                : "opacity-0"
+            } ${
+              isActive
+                ? "bg-gradient-to-l from-blue-50 from-40% via-blue-50/60 via-blue-50/20 to-transparent"
+                : "bg-gradient-to-l from-gray-100 from-40% via-gray-100/60 via-gray-100/20 to-transparent"
+            }`}
+          />
           <span className="pr-8">{t.firstLine}</span>
         </button>
 
-        {/* Three dots menu button */}
-        {isHovered && (
+        {/* Three dots menu button - now shows on hover OR when active */}
+        {(isHovered || isActive || openMenuId === t.id) && (
           <button
             onClick={(e) => {
               e.stopPropagation();
               setOpenMenuId(openMenuId === t.id ? null : t.id);
             }}
-            className="menu-button absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded hover:bg-gray-200 transition-colors"
+            className={`menu-button absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded transition-all duration-200 z-10 ${
+              isActive ? "text-blue-600" : "text-gray-500"
+            }`}
           >
-            <MoreHorizontal size={16} className="text-gray-500" />
+            <MoreHorizontal size={16} />
           </button>
         )}
 
