@@ -1,22 +1,41 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import prisma from "../lib/prisma";
 import { answerQuery } from "../lib/ai";
 
-const schema = z.object({ query: z.string().min(4) });
+const schema = z.object({
+  chatId: z.string().uuid("chatId must be a valid UUID"),
+  query: z.string().min(4),
+});
 
-const chatHandler = async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
+const chatHandler = async (
+  req: Request,
+  res: Response,
+  _next: NextFunction
+): Promise<void> => {
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Bad query" });
+    res.status(400).json({ error: "Payload must include query and chatId." });
     return;
   }
+  const { chatId, query } = parsed.data;
 
   try {
-    const { answer, grounded } = await answerQuery(parsed.data.query);
+    const { answer, grounded } = await answerQuery(query);
+
+    await prisma.message.create({
+      data: {
+        chatId,
+        from: "ai",
+        content: answer,
+        grounded,
+      },
+    });
+
     res.json({ answer, grounded });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "LLM error" });
+    console.error("LLM or DB error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 

@@ -18,6 +18,10 @@ const generateTitle = async (content: string) => {
     const title = completion.choices[0].message.content?.trim();
     if (!title) throw new Error("Empty title returned");
 
+    if (title.charAt(0) === '"' && title.charAt(title.length - 1) === '"') {
+      return title.slice(1, -1);
+    }
+
     return title;
   } catch (err) {
     console.error("Title generation error:", err);
