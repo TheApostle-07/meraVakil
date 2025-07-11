@@ -22,11 +22,12 @@ model User {
 }
 
 model Chat {
-  id       String    @id @default(uuid())
-  title    String
-  userId   String
-  user     User      @relation(fields: [userId], references: [id])
-  messages Message[]
+  id        String    @id @default(uuid())
+  title     String
+  userId    String
+  isStarred Boolean   @default(false)
+  user      User      @relation(fields: [userId], references: [id])
+  messages  Message[]
 }
 
 model Message {

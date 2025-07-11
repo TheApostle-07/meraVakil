@@ -11,6 +11,7 @@ const getUserChats = async (req: Request, res: Response) => {
       select: {
         id: true,
         title: true,
+        isStarred: true,
       },
     });
     return res.status(200).json(chats);
