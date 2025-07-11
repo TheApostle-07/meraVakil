@@ -1,29 +1,23 @@
 "use client";
 import { useEffect, useState } from "react";
-import { X, Plus, MoreHorizontal, Star, Edit, Trash2 } from "lucide-react";
+import {
+  X,
+  Plus,
+  MoreHorizontal,
+  Star,
+  Edit,
+  Trash2,
+  MessageSquare,
+} from "lucide-react";
 
 import RenameChat from "./Popup/Rename";
 import DeleteChat from "./Popup/Delete";
 
-type ChatThread = { id: string; firstLine: string };
-
-const DEMO_THREADS: string[] = [
-  "How do I evict a tenant?",
-  "Cheque bounced – what next?",
-  "Delay in flat possession by builder",
-  "Apply for succession certificate",
-  "Cyber-fraud on UPI app",
-  "Mutual divorce process time",
-  "Wrongful job termination in IT",
-  "Refund of security deposit",
-  "Road accident claim amount",
-  "Partition suit among siblings",
-  "BBMP property-tax dispute",
-  "Section 138 NI notice format",
-  "Transfer of farmland in Karnataka",
-  "Domestic violence protection order",
-  "Consumer complaint against hospital",
-];
+type ChatThread = {
+  id: string;
+  firstLine: string;
+  isStarred?: boolean;
+};
 
 export default function Sidebar({
   activeId,
@@ -49,20 +43,45 @@ export default function Sidebar({
 
   /** initial load -- pull from localStorage or seed demo data */
   useEffect(() => {
+    const loadThreads = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/chat/all`,
+          {
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+          }
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const chats: { id: string; title: string; isStarred?: boolean }[] =
+          await res.json();
+        console.log("Fetched chats:", chats);
+
+        const mapped = chats.map((c) => ({
+          id: c.id,
+          firstLine: c.title,
+          isStarred: c.isStarred || false,
+        }));
+
+        setThreads(mapped);
+        localStorage.setItem("mv_threads", JSON.stringify(mapped));
+      } catch (err) {
+        console.error(
+          "Failed to fetch chats, falling back to localStorage:",
+          err
+        );
+      }
+    };
+
     const saved = JSON.parse(
       localStorage.getItem("mv_threads") || "[]"
     ) as ChatThread[];
-
     if (saved.length) {
       setThreads(saved);
-    } else {
-      const seeded = DEMO_THREADS.map((line, i) => ({
-        id: `demo-${i}`,
-        firstLine: line,
-      }));
-      localStorage.setItem("mv_threads", JSON.stringify(seeded));
-      setThreads(seeded);
     }
+
+    loadThreads();
   }, []);
 
   /** Close menu when clicking outside */
@@ -112,6 +131,46 @@ export default function Sidebar({
     setSelectedThread(null);
   };
 
+  const handleToggleStar = async (threadId: string) => {
+    const current = threads.find((t) => t.id === threadId);
+    if (!current) return;
+    const newIsStarred = !current.isStarred;
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/chat/toggle-star`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ chatId: threadId, isStarred: newIsStarred }),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const updated = (await res.json()) as {
+        id: string;
+        title: string;
+        isStarred: boolean;
+      };
+
+      const syncedThreads = threads.map((thread) =>
+        thread.id === updated.id
+          ? { ...thread, isStarred: updated.isStarred }
+          : thread
+      );
+      setThreads(syncedThreads);
+      localStorage.setItem("mv_threads", JSON.stringify(syncedThreads));
+    } catch (err) {
+      console.error("Failed to toggle star:", err);
+    }
+  };
+
   //** reusable list item */
   function Item({ t }: { t: ChatThread }) {
     const isActive = t.id === activeId;
@@ -123,7 +182,7 @@ export default function Sidebar({
 
       switch (action) {
         case "star":
-          console.log("Star thread:", t.id);
+          handleToggleStar(t.id);
           break;
         case "rename":
           setSelectedThread(t);
@@ -149,11 +208,7 @@ export default function Sidebar({
             close?.();
           }}
           className={`block w-full truncate text-left px-3 py-2 my-0.5 rounded-lg transition relative
-        ${
-          isActive
-            ? "bg-blue-50 text-blue-800 font-medium"
-            : "hover:bg-gray-100"
-        }`}
+        ${isActive ? "bg-blue-50 text-blue-800" : "hover:bg-gray-100"}`}
         >
           {/* Add gradient fade effect overlay */}
           <div
@@ -167,7 +222,12 @@ export default function Sidebar({
                 : "bg-gradient-to-l from-gray-100 from-40% via-gray-100/60 via-gray-100/20 to-transparent"
             }`}
           />
-          <span className="pr-8">{t.firstLine}</span>
+          <div className="flex items-center gap-2 pr-8">
+            {t.isStarred && (
+              <Star size={14} className="text-blue-600 fill-blue-600" />
+            )}
+            <span className="flex-1 truncate">{t.firstLine}</span>
+          </div>
         </button>
 
         {/* Three dots menu button - now shows on hover OR when active */}
@@ -195,8 +255,11 @@ export default function Sidebar({
               }}
               className="w-full text-left rounded-sm px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
             >
-              <Star size={14} />
-              Star
+              <Star
+                size={14}
+                className={t.isStarred ? "text-yellow-500 fill-yellow-500" : ""}
+              />
+              {t.isStarred ? "Unstar" : "Star"}
             </button>
             <button
               onClick={(e) => {
@@ -224,8 +287,26 @@ export default function Sidebar({
     );
   }
 
+  // Empty state component
+  function EmptyState() {
+    return (
+      <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
+        <div className="mb-4 p-3 bg-gray-100 rounded-full">
+          <MessageSquare size={24} className="text-gray-400" />
+        </div>
+        <h3 className="text-sm font-medium text-gray-900 mb-2">
+          No Recent chats
+        </h3>
+      </div>
+    );
+  }
+
   const baseClass =
     "w-56 lg:w-64 shrink-0 border-r border-gray-200 bg-white flex-col h-screen pt-14";
+
+  // Separate starred and regular chats
+  const starredChats = threads.filter((t) => t.isStarred);
+  const regularChats = threads.filter((t) => !t.isStarred);
 
   return (
     <aside
@@ -271,9 +352,37 @@ export default function Sidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 py-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
-        {threads.map((t) => (
-          <Item key={t.id} t={t} />
-        ))}
+        {threads.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <>
+            {/* Starred Chats Section */}
+            {starredChats.length > 0 && (
+              <div className="mb-4">
+                <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Starred
+                </div>
+                {starredChats.map((t) => (
+                  <Item key={t.id} t={t} />
+                ))}
+              </div>
+            )}
+
+            {/* Regular Chats Section */}
+            {regularChats.length > 0 && (
+              <div>
+                {starredChats.length > 0 && (
+                  <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Recent
+                  </div>
+                )}
+                {regularChats.map((t) => (
+                  <Item key={t.id} t={t} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {showRenameModal && (
