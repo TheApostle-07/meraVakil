@@ -1,5 +1,7 @@
 import "dotenv/config";
 import express from "express";
+import { clerkMiddleware } from "@clerk/express";
+
 import cors from "./middleware/cors";
 import rateLimiter from "./middleware/rateLimit";
 import chatRoute from "./api/chat";
@@ -12,6 +14,7 @@ app.post("/api/webhook", express.raw({ type: "application/json" }), storeUser);
 app.use(cors);
 app.use(rateLimiter);
 app.use(express.json());
+app.use(clerkMiddleware());
 
 app.post("/api/chat", chatRoute);
 
