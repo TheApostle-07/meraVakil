@@ -14,6 +14,7 @@ const app = express();
 
 app.post("/api/webhook", express.raw({ type: "application/json" }), storeUser);
 
+app.set("trust proxy", 1);
 app.use(cors);
 app.use(rateLimiter);
 app.use(express.json());
