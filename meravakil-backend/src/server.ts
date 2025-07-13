@@ -12,14 +12,8 @@ import messageRouter from "./api/message/messageRouter";
 
 const app = express();
 
-app.use(cors);
-app.options("*", cors);
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Credentials", "true");
-  next();
-});
-
 app.post("/api/webhook", express.raw({ type: "application/json" }), storeUser);
+app.use(cors);
 
 // app.set("trust proxy", 1);
 app.use(rateLimiter);
