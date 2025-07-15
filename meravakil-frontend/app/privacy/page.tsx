@@ -1,55 +1,51 @@
-// meravakil-frontend/app/terms/page.tsx
+// meravakil-frontend/app/privacy/page.tsx
 "use client";
 
 import { motion } from "framer-motion";
-import { CheckCircle, ShieldCheck } from "lucide-react";
+import { Shield } from "lucide-react";
 import Link from "next/link";
 
 /**
- * Elegant Terms & Conditions page for MeraVakil – built for the Next.js App Router.
+ * Privacy Policy page for MeraVakil – Next.js App Router.
  *
- * ‣ Responsive two-column layout on ≥lg screens (sticky side-nav + main content).
- * ‣ Smooth Framer-motion entrance animations.
- * ‣ Tailwind utility classes with brand-neutral palette (easy to theme).
- * ‣ Anchor links for quick navigation & a subtle scroll-spy highlight.
- *
- * Update the <LastUpdated /> date in one place and it auto-renders everywhere.
+ * ✧ Sticky side-nav for quick section jumps.
+ * ✧ Framer-motion entrance + scroll animations.
+ * ✧ Tailwind CSS, dark-mode ready.
  */
 
 const sections = [
-  { id: "introduction", label: "1. Introduction" },
-  { id: "services", label: "2. Scope of Services" },
-  { id: "account", label: "3. Account Registration" },
-  { id: "payments", label: "4. Payments & Refunds" },
-  { id: "liability", label: "5. Limitation of Liability" },
-  { id: "privacy", label: "6. Privacy & Data" },
-  { id: "termination", label: "7. Termination" },
-  { id: "governing-law", label: "8. Governing Law" },
-  { id: "contact", label: "9. Contact" },
+  { id: "intro", label: "1. Introduction" },
+  { id: "data-collected", label: "2. Data We Collect" },
+  { id: "usage", label: "3. How We Use Data" },
+  { id: "security", label: "4. Data Security" },
+  { id: "cookies", label: "5. Cookies & Tracking" },
+  { id: "rights", label: "6. Your Rights" },
+  { id: "changes", label: "7. Policy Changes" },
+  { id: "contact", label: "8. Contact" },
 ];
 
 const LastUpdated = () => <time dateTime="2025-07-16">16 July 2025</time>;
 
-export default function TermsPage() {
+export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-800 dark:bg-[#0e0e0e] dark:text-gray-100">
+    <div className="min-h-screen bg-gray-50 text-gray-800 dark:bg-[#0d0d0d] dark:text-gray-100">
       {/* Hero */}
-      <section className="relative isolate overflow-hidden bg-gradient-to-tr from-indigo-600 via-purple-600 to-fuchsia-600 py-24 text-center text-white shadow-xl">
+      <section className="relative isolate overflow-hidden bg-gradient-to-br from-sky-600 via-indigo-600 to-purple-700 py-24 text-center text-white shadow-xl">
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="mx-auto max-w-2xl px-4 text-4xl font-extrabold leading-tight sm:text-5xl lg:text-6xl"
         >
-          Terms &amp; Conditions
+          Privacy Policy
         </motion.h1>
-        <p className="mt-4 text-sm/relaxed tracking-wide">
+        <p className="mt-4 text-sm tracking-wide">
           Last updated: <LastUpdated />
         </p>
-        <ShieldCheck className="absolute right-6 top-6 h-10 w-10 text-white/60" />
+        <Shield className="absolute right-6 top-6 h-10 w-10 text-white/60" />
       </section>
 
-      {/* Content grid */}
+      {/* Grid layout */}
       <div className="mx-auto grid max-w-6xl grid-cols-1 lg:grid-cols-[18rem_1fr] gap-8 px-4 py-12 lg:py-20">
         {/* Side nav */}
         <nav className="hidden lg:block sticky top-24 self-start">
@@ -67,7 +63,7 @@ export default function TermsPage() {
           </ul>
         </nav>
 
-        {/* Main article */}
+        {/* Main content */}
         <article className="prose lg:prose-lg dark:prose-invert mx-auto">
           {sections.map(({ id, label }) => (
             <Section key={id} id={id} label={label} />
@@ -99,86 +95,67 @@ function Section({ id, label }: { id: string; label: string }) {
 
 function getContent(id: string) {
   switch (id) {
-    case "introduction":
+    case "intro":
       return (
         <p>
-          Welcome to MeraVakil. By accessing or using our platform, you agree to
-          be bound by these Terms &amp; Conditions ("Terms"). If you do not
-          agree, please refrain from using the service.
+          This Privacy Policy explains how MeraVakil ("we", "us", or "our")
+          collects, uses, and safeguards your personal data when you use our
+          services.
         </p>
       );
-    case "services":
+    case "data-collected":
       return (
-        <ul className="list-disc pl-5 space-y-2">
-          <li>AI-assisted legal information tailored for Indian law.</li>
-          <li>
-            Document review and drafting suggestions generated via OpenAI
-            models.
-          </li>
-          <li>
-            Connection to licensed advocates for formal legal representation.
-          </li>
+        <ul className="list-disc space-y-2 pl-5">
+          <li>Account details (name, email, phone).</li>
+          <li>Payment identifiers (handled via Razorpay; card data is never stored).</li>
+          <li>Uploaded documents &amp; chat transcripts.</li>
+          <li>Device &amp; usage data (IP, browser, timestamps).</li>
         </ul>
       );
-    case "account":
+    case "usage":
       return (
         <p>
-          You must create an account with accurate details. You are responsible
-          for safeguarding your login credentials and for all activity that
-          occurs under your account.
+          We process data to provide and improve legal-information services,
+          personalise your experience, prevent fraud, and comply with legal
+          obligations.
         </p>
       );
-    case "payments":
-      return (
-        <>
-          <p>
-            Fees are payable in INR via Razorpay. All purchases are final unless
-            expressly stated otherwise under applicable consumer-protection
-            laws.
-          </p>
-          <p>
-            In limited circumstances, MeraVakil may, at its sole discretion,
-            issue refunds or credits.
-          </p>
-        </>
-      );
-    case "liability":
+    case "security":
       return (
         <p>
-          MeraVakil provides information, not legal representation. We do not
-          guarantee the accuracy or completeness of AI-generated content and are
-          not liable for any losses arising from reliance on the service.
+          Data is encrypted in transit (TLS) and at rest. Access is restricted
+          via role-based controls, and regular audits are performed to detect
+          vulnerabilities.
         </p>
       );
-    case "privacy":
+    case "cookies":
       return (
         <p>
-          Our <Link href="/privacy" className="underline">Privacy Policy</Link>
-          &nbsp;explains how we collect, use, and protect your data. By using the
-          service, you consent to those practices.
+          We use first-party cookies for authentication, and third-party analytics to understand usage patterns. You can disable cookies in your browser, but some features may not work.
         </p>
       );
-    case "termination":
+    case "rights":
       return (
-        <p>
-          We reserve the right to suspend or terminate your account if you
-          violate these Terms or engage in unlawful conduct.
-        </p>
+        <ul className="list-disc space-y-2 pl-5">
+          <li>Access: Request a copy of your stored data.</li>
+          <li>Rectification: Correct inaccurate information.</li>
+          <li>Erasure: Delete your account &amp; data (legal limits apply).</li>
+          <li>Objection: Opt-out of certain processing activities.</li>
+        </ul>
       );
-    case "governing-law":
+    case "changes":
       return (
         <p>
-          These Terms are governed by the laws of India. Any disputes shall be
-          subject to the exclusive jurisdiction of the courts of Bengaluru,
-          Karnataka.
+          We may update this policy periodically. Material changes will be
+          communicated via email or in-app notification.
         </p>
       );
     case "contact":
       return (
         <p>
-          Questions? Email us at&nbsp;
-          <Link href="mailto:support@meravakil.com" className="underline">
-            support@meravakil.com
+          For privacy enquiries, email&nbsp;
+          <Link href="mailto:privacy@meravakil.com" className="underline">
+            privacy@meravakil.com
           </Link>
           .
         </p>
@@ -187,4 +164,3 @@ function getContent(id: string) {
       return null;
   }
 }
-
